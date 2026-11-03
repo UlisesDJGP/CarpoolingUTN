@@ -18,7 +18,7 @@ CREATE TABLE usuarios (
     password_hash        text NOT NULL,
     verificado_en        timestamptz,
     CONSTRAINT usuarios_correo_institucional_check
-        CHECK (correo_institucional ~* '^[A-Za-z0-9._%+-]+@([A-Za-z0-9-]+\.)*utn\.edu\.ar$')
+        CHECK (correo_institucional ~* '^[A-Za-z0-9._%+-]+@([A-Za-z0-9-]+\.)*utnay\.edu\.mx$')
 );
 
 -- ----------------------------------------------------------------------------

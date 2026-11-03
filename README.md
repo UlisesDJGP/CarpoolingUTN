@@ -4,7 +4,7 @@ Prototipo de carpooling universitario con PostgreSQL + PostGIS y un servicio de 
 
 ## Estado
 
-Fase 0 en curso: contratos, infraestructura base y convenciones. La zona de operación (decisión D1) todavía no está confirmada.
+Fase 0 completa: contratos, infraestructura base y convenciones. Zona de operación confirmada: Universidad Tecnológica de Nayarit, con los municipios de Xalisco y Tepic, Nayarit, México.
 
 ## Requisitos
 
@@ -23,7 +23,8 @@ sudo usermod -aG docker "$USER"   # cerrar sesión y volver a entrar
 
 # 2. Configuración
 cp infra/.env.example infra/.env
-# Editar infra/.env y completar ZONE_BBOX, OSM_SOURCE_URL y TILE_STYLE_URL.
+# La zona ya está cargada: Xalisco y Tepic, Nayarit.
+# Solo falta TILE_STYLE_URL para el mapa.
 
 # 3. Extracto OSM recortado
 infra/osm/extract.sh
