@@ -1,0 +1,16 @@
+__pycache__/
+*.py[cod]
+.venv/
+.env
+infra/.env
+
+*.pbf
+infra/osm/valhalla/*
+!infra/osm/valhalla/.gitkeep
+
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+dist/
+build/
+*.egg-info/

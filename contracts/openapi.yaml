@@ -1,0 +1,360 @@
+openapi: 3.1.0
+info:
+  title: UTN Carpooling — Servicio de ruteo
+  version: 1.0.0
+  description: |
+    Contrato del servicio de ruteo sobre Valhalla. Versión 1.
+    El servicio no calcula rutas con un modelo de lenguaje; usa el motor sobre el grafo de calles.
+servers:
+  - url: http://localhost:8000
+    description: Desarrollo local
+tags:
+  - name: ruta
+  - name: viajes
+  - name: salud
+
+paths:
+  /v1/ruta/calcular:
+    post:
+      tags: [ruta]
+      operationId: calcularRuta
+      summary: Calcula una ruta entre origen y destino
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CalcularRutaRequest'
+      responses:
+        '200':
+          description: Ruta calculada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CalcularRutaResponse'
+        '422':
+          $ref: '#/components/responses/ErrorNegocio'
+        '502':
+          $ref: '#/components/responses/ErrorMotor'
+
+  /v1/ruta/emparejar:
+    post:
+      tags: [ruta]
+      operationId: emparejarCandidatos
+      summary: Calcula el desvío de cada candidato y decide si es aceptable
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EmparejarRequest'
+      responses:
+        '200':
+          description: Resultado por candidato
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmparejarResponse'
+        '404':
+          $ref: '#/components/responses/ErrorNegocio'
+        '422':
+          $ref: '#/components/responses/ErrorNegocio'
+        '502':
+          $ref: '#/components/responses/ErrorMotor'
+
+  /v1/ruta/paradas:
+    post:
+      tags: [ruta]
+      operationId: ordenarParadas
+      summary: Ordena las paradas y devuelve la polilínea y el ETA por parada
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ParadasRequest'
+      responses:
+        '200':
+          description: Orden óptimo encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ParadasResponse'
+        '422':
+          $ref: '#/components/responses/ErrorNegocio'
+        '502':
+          $ref: '#/components/responses/ErrorMotor'
+
+  /v1/viajes/{id}/posicion:
+    post:
+      tags: [viajes]
+      operationId: registrarPosicion
+      summary: Registra la última posición conocida de un viaje
+      parameters:
+        - $ref: '#/components/parameters/ViajeId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PosicionRequest'
+      responses:
+        '204':
+          description: Posición registrada
+        '404':
+          $ref: '#/components/responses/ErrorNegocio'
+
+  /v1/viajes/{id}/eta:
+    get:
+      tags: [viajes]
+      operationId: obtenerEta
+      summary: Devuelve el ETA vigente del viaje
+      parameters:
+        - $ref: '#/components/parameters/ViajeId'
+      responses:
+        '200':
+          description: ETA calculado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EtaResponse'
+        '404':
+          $ref: '#/components/responses/ErrorNegocio'
+
+  /v1/salud:
+    get:
+      tags: [salud]
+      operationId: obtenerSalud
+      summary: Estado del servicio y del motor
+      responses:
+        '200':
+          description: Estado actual
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SaludResponse'
+
+components:
+  parameters:
+    ViajeId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+
+  responses:
+    ErrorNegocio:
+      description: Error de negocio o de validación
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    ErrorMotor:
+      description: El motor de ruteo no responde
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+  schemas:
+    LatLon:
+      type: object
+      required: [lat, lon]
+      properties:
+        lat:
+          type: number
+          minimum: -90
+          maximum: 90
+        lon:
+          type: number
+          minimum: -180
+          maximum: 180
+
+    CalcularRutaRequest:
+      type: object
+      required: [origen, destino, salida_en]
+      properties:
+        origen:
+          $ref: '#/components/schemas/LatLon'
+        destino:
+          $ref: '#/components/schemas/LatLon'
+        salida_en:
+          type: string
+          format: date-time
+        evitar_zonas:
+          type: array
+          description: Identificadores de zonas a evitar. El servicio agrega las zonas vigentes.
+          items:
+            type: string
+            format: uuid
+
+    CalcularRutaResponse:
+      type: object
+      required: [polilinea, distancia_m, duracion_s, zonas_aplicadas]
+      properties:
+        polilinea:
+          type: array
+          items:
+            $ref: '#/components/schemas/LatLon'
+        distancia_m:
+          type: integer
+          minimum: 0
+        duracion_s:
+          type: integer
+          minimum: 0
+        zonas_aplicadas:
+          type: array
+          items:
+            type: string
+            format: uuid
+
+    EmparejarRequest:
+      type: object
+      required: [ruta_id, candidatos]
+      properties:
+        ruta_id:
+          type: string
+          format: uuid
+        candidatos:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/Candidato'
+        desvio_max_s:
+          type: integer
+          minimum: 0
+          description: Si se omite, se usa max(600, 15 % del trayecto base).
+
+    Candidato:
+      type: object
+      required: [solicitud_id, punto]
+      properties:
+        solicitud_id:
+          type: string
+          format: uuid
+        punto:
+          $ref: '#/components/schemas/LatLon'
+
+    EmparejarResponse:
+      type: object
+      required: [candidatos]
+      properties:
+        candidatos:
+          type: array
+          items:
+            $ref: '#/components/schemas/ResultadoCandidato'
+
+    ResultadoCandidato:
+      type: object
+      required: [solicitud_id, desvio_s, caminata_m, aceptable]
+      properties:
+        solicitud_id:
+          type: string
+          format: uuid
+        desvio_s:
+          type: integer
+          minimum: 0
+        caminata_m:
+          type: integer
+          minimum: 0
+        aceptable:
+          type: boolean
+
+    ParadasRequest:
+      type: object
+      required: [origen, destino, paradas]
+      properties:
+        origen:
+          $ref: '#/components/schemas/LatLon'
+        destino:
+          $ref: '#/components/schemas/LatLon'
+        paradas:
+          type: array
+          minItems: 1
+          maxItems: 4
+          items:
+            $ref: '#/components/schemas/LatLon'
+
+    ParadasResponse:
+      type: object
+      required: [orden, polilinea, eta_por_parada]
+      properties:
+        orden:
+          type: array
+          description: Índices de las paradas en el orden óptimo.
+          items:
+            type: integer
+            minimum: 0
+        polilinea:
+          type: array
+          items:
+            $ref: '#/components/schemas/LatLon'
+        eta_por_parada:
+          type: array
+          items:
+            $ref: '#/components/schemas/EtaParada'
+
+    EtaParada:
+      type: object
+      required: [indice, eta_s]
+      properties:
+        indice:
+          type: integer
+          minimum: 0
+        eta_s:
+          type: integer
+          minimum: 0
+
+    PosicionRequest:
+      type: object
+      required: [lat, lon, marca_tiempo]
+      properties:
+        lat:
+          type: number
+          minimum: -90
+          maximum: 90
+        lon:
+          type: number
+          minimum: -180
+          maximum: 180
+        marca_tiempo:
+          type: string
+          format: date-time
+
+    EtaResponse:
+      type: object
+      required: [eta_s, base_s, factor]
+      properties:
+        eta_s:
+          type: integer
+          minimum: 0
+        base_s:
+          type: integer
+          minimum: 0
+        factor:
+          type: number
+          minimum: 0
+
+    SaludResponse:
+      type: object
+      required: [estado, motor]
+      properties:
+        estado:
+          type: string
+          enum: [ok, degradado]
+        motor:
+          type: string
+          enum: [ok, no_disponible]
+
+    Error:
+      type: object
+      required: [error, mensaje]
+      properties:
+        error:
+          type: string
+          description: Código de negocio.
+          examples: [SIN_CUPO]
+        mensaje:
+          type: string

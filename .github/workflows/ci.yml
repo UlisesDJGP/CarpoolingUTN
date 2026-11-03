@@ -1,0 +1,35 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  rapido:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - run: uv python install 3.12
+
+      - name: Base de datos
+        if: ${{ hashFiles('db/pyproject.toml') != '' }}
+        working-directory: db
+        run: |
+          uv sync --frozen
+          uv run ruff check .
+          uv run mypy .
+          uv run pytest -m "not integration"
+
+      - name: Ruteo
+        if: ${{ hashFiles('routing/pyproject.toml') != '' }}
+        working-directory: routing
+        run: |
+          uv sync --frozen
+          uv run ruff check .
+          uv run mypy .
+          uv run pytest -m "not integration"

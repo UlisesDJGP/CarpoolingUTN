@@ -1,0 +1,35 @@
+name: carpooling-utnay
+
+services:
+  db:
+    image: postgis/postgis:17-3.5
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-carpooling}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-carpooling}
+      POSTGRES_DB: ${POSTGRES_DB:-carpooling}
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-carpooling} -d ${POSTGRES_DB:-carpooling}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  valhalla:
+    image: ghcr.io/valhalla/valhalla-scripted:latest
+    ports:
+      - "8002:8002"
+    volumes:
+      - ./osm/valhalla:/custom_files
+    environment:
+      server_threads: ${VALHALLA_THREADS:-4}
+      build_admins: "True"
+      build_time_zones: "True"
+      build_elevation: "False"
+    restart: unless-stopped
+
+volumes:
+  pgdata:
