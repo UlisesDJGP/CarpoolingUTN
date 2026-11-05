@@ -30,6 +30,6 @@ curl -fsS http://localhost:8002/status | jq -c '{version, acciones: (.available_
 echo "== Ruta base =="
 curl -s -X POST http://localhost:8002/route -H 'Content-Type: application/json' -d '{"locations":[{"lat":21.4247499,"lon":-104.8955129},{"lat":21.5041,"lon":-104.8946}],"costing":"auto"}' | jq -c '{t: .trip.summary.time, km: .trip.summary.length}'
 
-echo "== H-EX1: poligono ignorado / punto efectivo =="
+echo "== H-EX1: poligono efectivo / punto efectivo =="
 curl -s -X POST http://localhost:8002/route -H 'Content-Type: application/json' -d '{"locations":[{"lat":21.4247499,"lon":-104.8955129},{"lat":21.5041,"lon":-104.8946}],"costing":"auto","exclude_polygons":[[[-104.90,21.45],[-104.89,21.45],[-104.89,21.46],[-104.90,21.46],[-104.90,21.45]]]}' | jq -c '{polygon_t: (.trip.summary.time // .error)}'
 curl -s -X POST http://localhost:8002/route -H 'Content-Type: application/json' -d '{"locations":[{"lat":21.4247499,"lon":-104.8955129},{"lat":21.5041,"lon":-104.8946}],"costing":"auto","exclude_locations":[{"lat":21.455388,"lon":-104.896110}]}' | jq -c '{point_t: (.trip.summary.time // .error)}'

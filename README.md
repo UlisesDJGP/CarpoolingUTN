@@ -37,7 +37,7 @@ docker compose -f infra/docker-compose.yml ps
 curl -fsS http://localhost:8002/status
 ```
 
-La primera vez, Valhalla construye las teselas al arrancar. Coste medido con el extracto actual: 2 h 13 min y 1.8 GB de `valhalla_tiles.tar` sobre un `utn.osm.pbf` de 2.7 MB. La imagen está fijada por digesto en `infra/docker-compose.yml` para que un `pull` no dispare esa reconstrucción.
+La primera vez, Valhalla construye las teselas al arrancar. Coste normal con el extracto actual: unos 20 segundos y 8.3 MB de `valhalla_tiles.tar` sobre un `utn.osm.pbf` de 2.7 MB. Anomalía corregida el 5 de noviembre: si el `source.osm.pbf` de 619 MB queda dentro de `infra/osm/valhalla/`, el entrypoint construye con todos los `.pbf` del directorio y tarda 2 h 13 min, genera 1.8 GB y deja `exclude_polygons` sin efecto. `infra/osm/extract.sh` guarda ya el `.pbf` fuente en `infra/osm/`, fuera del directorio montado. La imagen está fijada por digesto en `infra/docker-compose.yml` para que un `pull` no dispare una reconstrucción.
 
 ## Estructura
 

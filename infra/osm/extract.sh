@@ -23,9 +23,13 @@ if [ "$ZONE_BBOX" = "PENDIENTE_D1" ] || [ "$OSM_SOURCE_URL" = "PENDIENTE_D1" ]; 
 fi
 
 OUT_DIR="$ROOT/infra/osm/valhalla"
+SOURCE_DIR="$ROOT/infra/osm"
 mkdir -p "$OUT_DIR"
 
-SOURCE="$OUT_DIR/source.osm.pbf"
+# El .pbf fuente vive fuera de OUT_DIR: el entrypoint de Valhalla construye
+# teselas con todos los *.pbf del directorio montado y con los dos juntos
+# tardó 2 h 13 min y generó 1.8 GB (ver auditoría de P0, E4).
+SOURCE="$SOURCE_DIR/source.osm.pbf"
 CLIPPED="$OUT_DIR/utn.osm.pbf"
 
 if [ ! -f "$SOURCE" ]; then
@@ -34,8 +38,8 @@ if [ ! -f "$SOURCE" ]; then
 fi
 
 echo "Recortando a $ZONE_BBOX"
-docker run --rm -v "$OUT_DIR:/data" stefda/osmium-tool:latest \
-  osmium extract --bbox "$ZONE_BBOX" -o /data/utn.osm.pbf /data/source.osm.pbf
+docker run --rm -v "$SOURCE_DIR:/data" stefda/osmium-tool:latest \
+  osmium extract --bbox "$ZONE_BBOX" -o /data/valhalla/utn.osm.pbf /data/source.osm.pbf
 
 echo "Listo: $CLIPPED"
 echo "Levantar el motor con: docker compose -f infra/docker-compose.yml up -d valhalla"
