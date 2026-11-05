@@ -19,7 +19,9 @@ services:
     restart: unless-stopped
 
   valhalla:
-    image: ghcr.io/valhalla/valhalla-scripted:latest
+    # Digesto fijo: versión 3.9.1-2085e78a5. Evita que un pull de :latest
+    # cambie la imagen y dispare una reconstrucción de teselas de ~2 h 13 min.
+    image: "ghcr.io/valhalla/valhalla-scripted@sha256:e2078b638205fba6ef246d8ae731d7f197b346a0ebc74fb5f41b01db50504c90"
     ports:
       - "8002:8002"
     volumes:

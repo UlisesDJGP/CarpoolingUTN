@@ -4,7 +4,7 @@ Prototipo de carpooling universitario con PostgreSQL + PostGIS y un servicio de 
 
 ## Estado
 
-Fase 0 cerrada: contratos, infraestructura base y convenciones. Base PostGIS y motor Valhalla funcionando. Zona de operación confirmada: Universidad Tecnológica de Nayarit, con los municipios de Xalisco y Tepic, Nayarit, México.
+Fase 0 cerrada: contratos, infraestructura base y convenciones. Base PostGIS y motor Valhalla funcionando. Zona de operación confirmada: Universidad Tecnológica de Nayarit, con los municipios de Xalisco y Tepic, Nayarit, México. P0 en curso; detalle en `PLAN_EJECUCION_FASES.md`.
 
 ## Requisitos
 
@@ -37,7 +37,7 @@ docker compose -f infra/docker-compose.yml ps
 curl -fsS http://localhost:8002/status
 ```
 
-La primera vez, Valhalla construye las teselas al arrancar. Puede tardar varios minutos según el tamaño del extracto.
+La primera vez, Valhalla construye las teselas al arrancar. Coste medido con el extracto actual: 2 h 13 min y 1.8 GB de `valhalla_tiles.tar` sobre un `utn.osm.pbf` de 2.7 MB. La imagen está fijada por digesto en `infra/docker-compose.yml` para que un `pull` no dispare esa reconstrucción.
 
 ## Estructura
 
@@ -58,6 +58,14 @@ docs/        Diccionario de datos, guía de ruteo y guía del mapa.
 - `contracts/CONVENCIONES.md`: nombres, tipos, estados, errores y proceso de cambio.
 
 Después de la etiqueta `contract-v1`, ningún agente modifica `contracts/` sin aprobación del coordinador.
+
+## Datos y atribución
+
+Los datos de calles y el grafo de ruteo provienen de OpenStreetMap. © contribuidores de OpenStreetMap, licencia [ODbL](https://opendatacommons.org/licenses/odbl/1-0/).
+
+- Fuente del extracto: descarga de Geofabrik (`infra/.env`, `OSM_SOURCE_URL`).
+- Recorte y teselas: `infra/osm/extract.sh` con la herramienta `osmium` y el motor Valhalla.
+- La atribución de OpenStreetMap también debe ser visible en el cliente de mapa (RF-33) y en `docs/ruteo.md` (Fase 1B).
 
 ## Reglas del proyecto
 
