@@ -27,6 +27,24 @@ $DC exec -T db psql -U carpooling -d carpooling -c "DROP DATABASE schema_check;"
 echo "== Valhalla /status =="
 curl -fsS http://localhost:8002/status | jq -c '{version, acciones: (.available_actions|length)}'
 
+echo "== Antiefluxo E4: el build uso un solo .pbf =="
+last_parse=$(docker logs carpooling-utnay-valhalla-1 2>&1 | grep '^.*Parsing files:' | tail -1)
+if [ -z "$last_parse" ]; then
+  echo "sin linea Parsing files en este arranque: teselas reutilizadas, sin rebuild (ok)"
+else
+  echo "$last_parse"
+  if echo "$last_parse" | grep -q 'source\.osm\.pbf'; then
+    echo "ERROR E4: el build listo el .pbf fuente de 619 MB; teselas degradadas (2 h 13 min, 1.8 GB, exclude_polygons roto)."
+    exit 1
+  fi
+  pbf_in_build=$(echo "$last_parse" | grep -o '\.pbf' | wc -l)
+  if [ "$pbf_in_build" -ne 1 ]; then
+    echo "ERROR E4: el build listo $pbf_in_build archivos .pbf; debe ser 1 (utn.osm.pbf)."
+    exit 1
+  fi
+  echo "build con un solo .pbf OK"
+fi
+
 echo "== Ruta base =="
 curl -s -X POST http://localhost:8002/route -H 'Content-Type: application/json' -d '{"locations":[{"lat":21.4247499,"lon":-104.8955129},{"lat":21.5041,"lon":-104.8946}],"costing":"auto"}' | jq -c '{t: .trip.summary.time, km: .trip.summary.length}'
 

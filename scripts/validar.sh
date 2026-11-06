@@ -25,6 +25,17 @@ fi
 echo "== Bash =="
 bash -n infra/osm/extract.sh && echo "extract.sh OK"
 bash -n scripts/validar.sh && echo "validar.sh OK"
+bash -n scripts/smoke_infra.sh && echo "smoke_infra.sh OK"
+bash -n scripts/test_zonas.sh && echo "test_zonas.sh OK"
+
+echo "== Antiefluxo E4: un solo .pbf en el directorio montado =="
+pbf_count=$(find infra/osm/valhalla -maxdepth 1 -name '*.pbf' | wc -l)
+if [ "$pbf_count" -gt 1 ]; then
+  echo "ERROR E4: $pbf_count .pbf en infra/osm/valhalla/; Valhalla construye con todos y degrada el grafo (auditoria P0 parte 2, E4)."
+  find infra/osm/valhalla -maxdepth 1 -name '*.pbf'
+  exit 1
+fi
+echo "pbf en valhalla/: $pbf_count (ok)"
 
 echo "== Compose =="
 docker compose -f infra/docker-compose.yml config --quiet && echo "compose OK"
