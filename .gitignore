@@ -14,3 +14,9 @@ infra/osm/valhalla/*
 dist/
 build/
 *.egg-info/
+
+# Documentación interna de orquestación: queda en local, no va al remoto
+/auditoria_carpooling_*.md
+/PLAN_IMPLEMENTACION.md
+/PLAN_EJECUCION_FASES.md
+/P0_evaluacion_completitud.xlsx

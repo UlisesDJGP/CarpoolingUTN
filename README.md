@@ -4,7 +4,7 @@ Prototipo de carpooling universitario con PostgreSQL + PostGIS y un servicio de 
 
 ## Estado
 
-Fase 0 cerrada: contratos, infraestructura base y convenciones. Base PostGIS y motor Valhalla funcionando. Zona de operación confirmada: Universidad Tecnológica de Nayarit, con los municipios de Xalisco y Tepic, Nayarit, México. P0 en curso; detalle en `PLAN_EJECUCION_FASES.md`.
+Fase 0 cerrada: contratos, infraestructura base y convenciones. Base PostGIS y motor Valhalla funcionando. Zona de operación confirmada: Universidad Tecnológica de Nayarit, con los municipios de Xalisco y Tepic, Nayarit, México. P0 en curso.
 
 ## Requisitos
 
@@ -77,7 +77,6 @@ Los datos de calles y el grafo de ruteo provienen de OpenStreetMap. © contribui
 
 ## Documentación
 
-- `PLAN_IMPLEMENTACION.md`: plan completo, fases, puertas y riesgos.
 - `docs/db.md`: diccionario de datos (Fase 1A).
 - `docs/ruteo.md`: zona cubierta, parámetros y limitaciones (Fase 1B).
 - `docs/mapa.md`: cliente de mapa (Fase 1C).
