@@ -9,6 +9,7 @@ URL="${VALHALLA_URL:-http://localhost:8002/route}"
 REQ=$(mktemp)
 trap 'rm -f "$REQ"' EXIT
 FAILS=0
+TOTAL=0
 
 BASE='{"locations":[{"lat":21.4247499,"lon":-104.8955129},{"lat":21.5041,"lon":-104.8946}],"costing":"auto"}'
 # Punto medio de la traza base y cuadrado de ~700 m de lado (perimetro ~2.8 km)
@@ -23,6 +24,7 @@ route() { # $1 = JSON extra a mergear; imprime {t, km, err}
 }
 
 check() { # $1 = etiqueta, $2 = expr true/false
+  TOTAL=$((TOTAL + 1))
   if eval "$2"; then
     echo "PASS: $1"
   else
@@ -103,13 +105,18 @@ base = route({})
 excl = route({"exclude_polygons": $SQ})
 lb = LineString(decode(base["trip"]["legs"][0]["shape"]))
 le = LineString(decode(excl["trip"]["legs"][0]["shape"]))
-ok = lb.intersects(poly) and not le.intersects(poly) and excl["trip"]["summary"]["time"] >= base["trip"]["summary"]["time"]
-print("base cruza=%s, excluida cruza=%s, desvio=+%.3f s" % (lb.intersects(poly), le.intersects(poly), excl["trip"]["summary"]["time"]-base["trip"]["summary"]["time"]))
+lejos = LineString([(0.0, 0.0), (0.001, 0.001)])
+ok = (lb.intersects(poly) and not le.intersects(poly)
+      and not lejos.intersects(poly)
+      and excl["trip"]["summary"]["time"] >= base["trip"]["summary"]["time"])
+print("base cruza=%s, excluida cruza=%s, lejos cruza=%s, desvio=+%.3f s" % (
+    lb.intersects(poly), le.intersects(poly), lejos.intersects(poly),
+    excl["trip"]["summary"]["time"] - base["trip"]["summary"]["time"]))
 sys.exit(0 if ok else 1)
 PY
 py_ok=$?
 rm -rf "$venv"
-check "base cruza el cuadrado, excluida no, desvio no negativo" '[ "$py_ok" -eq 0 ]'
+check "base cruza el cuadrado, excluida no, lejos no, desvio no negativo" '[ "$py_ok" -eq 0 ]'
 
 echo "== 9: limites del motor se SUMAN entre poligonos =="
 R9a=$(route "{\"exclude_polygons\": $(python3 -c "
@@ -136,9 +143,19 @@ R9d=$(jq -c '. + {exclude_locations: [range(0;51) | {lat: 21.42 + (. * 0.001), l
   | curl -s -X POST "$URL" -H 'Content-Type: application/json' -d @- | jq -c '{err: .error}')
 check "51 exclude_locations rechazados (limite 50)" '[ "$(echo "$R9d" | jq -r .err)" = "Exceeded max avoid locations: 50" ]'
 
+echo "== 10: control negativo del verificador =="
+# Una condicion falsa debe contar como fallo; si no, el resto de PASS no vale.
+if ( FAILS=0; check "control" 'false' >/dev/null; [ "$FAILS" -eq 1 ] ); then
+  echo "PASS: el verificador marca fallo en una condicion falsa"
+  TOTAL=$((TOTAL + 1))
+else
+  echo "FAIL: el verificador no detecta una condicion falsa"
+  FAILS=$((FAILS + 1))
+fi
+
 echo
 if [ "$FAILS" -eq 0 ]; then
-  echo "ZONAS OK: 13 comprobaciones en verde"
+  echo "ZONAS OK: $TOTAL comprobaciones en verde"
 else
   echo "ZONAS FAIL: $FAILS comprobaciones en rojo"
   exit 1

@@ -45,6 +45,18 @@ else
   echo "build con un solo .pbf OK"
 fi
 
+echo "== Tamano de teselas (refuerzo D4) =="
+tar_mb=$(docker exec carpooling-utnay-valhalla-1 du -m /custom_files/valhalla_tiles.tar 2>/dev/null | cut -f1)
+if [ -n "$tar_mb" ]; then
+  echo "valhalla_tiles.tar: ${tar_mb} MB"
+  if [ "$tar_mb" -ge 100 ]; then
+    echo "ERROR E4: teselas de ${tar_mb} MB; una construccion sana pesa ~8 MB (la anomalia E4 dio 1.8 GB)."
+    exit 1
+  fi
+else
+  echo "AVISO: no se pudo medir valhalla_tiles.tar; revisar el contenedor."
+fi
+
 echo "== Ruta base =="
 curl -s -X POST http://localhost:8002/route -H 'Content-Type: application/json' -d '{"locations":[{"lat":21.4247499,"lon":-104.8955129},{"lat":21.5041,"lon":-104.8946}],"costing":"auto"}' | jq -c '{t: .trip.summary.time, km: .trip.summary.length}'
 
