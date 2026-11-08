@@ -4,6 +4,8 @@
 set -uo pipefail
 cd "$(dirname "$0")/.."
 DC="docker compose -f infra/docker-compose.yml"
+VH=$($DC ps -q valhalla 2>/dev/null || true)
+if [ -z "$VH" ]; then echo "ERROR: el servicio valhalla no esta levantado"; exit 1; fi
 
 echo "== compose ps =="
 $DC ps --format 'table {{.Name}}\t{{.Status}}'
@@ -28,7 +30,7 @@ echo "== Valhalla /status =="
 curl -fsS http://localhost:8002/status | jq -c '{version, acciones: (.available_actions|length)}'
 
 echo "== Antiefluxo E4: el build uso un solo .pbf =="
-last_parse=$(docker logs carpooling-utnay-valhalla-1 2>&1 | grep '^.*Parsing files:' | tail -1)
+last_parse=$(docker logs "$VH" 2>&1 | grep '^.*Parsing files:' | tail -1)
 if [ -z "$last_parse" ]; then
   echo "sin linea Parsing files en este arranque: teselas reutilizadas, sin rebuild (ok)"
 else
@@ -46,7 +48,7 @@ else
 fi
 
 echo "== Tamano de teselas (refuerzo D4) =="
-tar_mb=$(docker exec carpooling-utnay-valhalla-1 du -m /custom_files/valhalla_tiles.tar 2>/dev/null | cut -f1)
+tar_mb=$(docker exec "$VH" du -m /custom_files/valhalla_tiles.tar 2>/dev/null | cut -f1)
 if [ -n "$tar_mb" ]; then
   echo "valhalla_tiles.tar: ${tar_mb} MB"
   if [ "$tar_mb" -ge 100 ]; then

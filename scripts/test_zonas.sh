@@ -72,9 +72,12 @@ T7=$(echo "$R7" | jq -r .t)
 check "el punto cambia la ruta ($T7 != $T0)" '[ "$T7" != "null" ] && [ "$T7" != "$T0" ]'
 
 echo "== 8: cruce real con Shapely (RF-23) =="
-venv=$(mktemp -d)
-python3 -m venv "$venv"
-"$venv/bin/pip" -q install shapely
+venv=/tmp/opencode/shp
+if ! "$venv/bin/python3" -c "import shapely" 2>/dev/null; then
+  echo "creando venv de Shapely en $venv (una sola vez)"
+  python3 -m venv "$venv"
+  "$venv/bin/pip" -q install --disable-pip-version-check shapely
+fi
 "$venv/bin/python3" - <<PY
 import json, urllib.request, sys
 from shapely.geometry import Polygon, LineString
@@ -115,7 +118,6 @@ print("base cruza=%s, excluida cruza=%s, lejos cruza=%s, desvio=+%.3f s" % (
 sys.exit(0 if ok else 1)
 PY
 py_ok=$?
-rm -rf "$venv"
 check "base cruza el cuadrado, excluida no, lejos no, desvio no negativo" '[ "$py_ok" -eq 0 ]'
 
 echo "== 9: limites del motor se SUMAN entre poligonos =="
