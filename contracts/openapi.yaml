@@ -259,6 +259,10 @@ components:
         caminata_m:
           type: integer
           minimum: 0
+          description: >-
+            Distancia geodésica en línea recta, en metros, del punto del pasajero
+            a la ruta del conductor. No es distancia caminando por red; el
+            prefiltro y el umbral de 800 m se aplican sobre esta misma medida.
         aceptable:
           type: boolean
 
